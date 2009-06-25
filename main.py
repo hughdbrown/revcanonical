@@ -59,34 +59,27 @@ class ApiPage(webapp.RequestHandler):
 		
 class RevCanonical:	
 	def revcanonical(self, url):
+		def canonical_test(attr,value) :
+			if attr == 'rel':
+				return (value.count('alternate') and value.count('short')) \
+					or value.count('short_url') \
+					or value.count('shorter-alternative') \
+					or value.count('short_url') \
+					or value.count('shortlink')
+			elif attrattr == 'rev':
+				return value.count('canonical')
+			else:
+				return False
+			
 		resp = urlfetch.fetch(url)
 		html = resp.content
 
 		fragment = len(url.split('#')) > 1 and '#' + url.split('#')[1] or ''
 
-		shorts = []
-		
 		parser = LinkParser()
 		parser.feed(html)
-		links = parser.links
-			
-		for l in links:
-			for e in l:
-				if e[0] == 'rel':
-					if e[1].count('alternate') and e[1].count('short'):
-						shorts.append(l)
-					elif e[1].count('short_url'):
-						shorts.append(l)
-					elif e[1].count('shorter-alternative'):
-						shorts.append(l)
-					elif e[1].count('short_url'):
-						shorts.append(l)
-					elif e[1].count('shortlink'):
-						shorts.append(l)
-				elif e[0] == 'rev':
-					if e[1].count('canonical'):
-						shorts.append(l)
-			
+		shorts = [link for link in parser.links for attr,value in link if canonical_test(attr,value)]
+
 		return self.hrefs(shorts, fragment)
 	
 	def hrefs(self, links, fragment = ''):
@@ -101,6 +94,9 @@ class LinkParser(SGMLParser):
         hreflist = [e[1] for e in attrs if e[0]=='href']
         if hreflist:
             self.links.append(attrs)
+        # I think this is the same intent:
+        # if any(e[0]=='href' for e in attrs):
+        #	self.links.append(attrs)
 
     def end_head(self, attrs):
         self.setnomoretags()
