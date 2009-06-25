@@ -26,11 +26,7 @@ class MainPage(webapp.RequestHandler):
 			
 			try:
 				links = RevCanonical().revcanonical(self.request.get('url'))
-				
-				if links:
-					template_values['link'] = links[0]
-				else:
-					template_values['link'] = template_values['url']
+				template_values['link'] = (links[0] if links else template_values['url'])
 			except Exception, e:
 				template_values['error'] = e;
 		
@@ -94,13 +90,7 @@ class RevCanonical:
 		return self.hrefs(shorts, fragment)
 	
 	def hrefs(self, links, fragment = ''):
-		hrefs = []
-		for l in links:
-			for e in l:
-				if e[0] == 'href':
-					hrefs.append(e[1] + fragment)
-
-		return hrefs;
+		return [(e[1] + fragment) for l in links for e in l if e[0] == 'href' ]
 
 class LinkParser(SGMLParser):
     def reset(self):
@@ -116,7 +106,6 @@ class LinkParser(SGMLParser):
         self.setnomoretags()
     start_body = end_head
 
-		
 application = webapp.WSGIApplication( [('/', MainPage), ('/api', ApiPage)], debug=True)
 
 def main():
